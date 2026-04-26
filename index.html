@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP 02 — Transports & The Wire</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-card: #0d1117;
+            --bg-code: #161b22;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent: #76B900;
+            --accent-dim: #76B90044;
+            --accent-glow: #76B90033;
+            --border: #21262d;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --font-body: 'Inter', sans-serif;
+            --max-width: 900px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 17px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .hero > * { position: relative; z-index: 1; }
+        .series-label {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+        .hero h1 .accent { color: var(--accent); }
+        .hero .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 640px;
+            margin-bottom: 2rem;
+        }
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 2.5rem;
+        }
+        .tag {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
+            white-space: nowrap;
+        }
+        .pipeline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+            max-width: var(--max-width);
+        }
+        .pipeline-step {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 0.3rem 0.7rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+        .pipeline-arrow { color: var(--accent); font-size: 0.9rem; font-weight: 700; }
+        .slide {
+            min-height: 100vh;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .slide-number {
+            font-family: var(--font-display);
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--accent-dim);
+            position: absolute;
+            top: 2rem;
+            right: 1.5rem;
+            line-height: 1;
+            user-select: none;
+        }
+        .slide h2 {
+            font-family: var(--font-display);
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            line-height: 1.25;
+        }
+        .slide h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .slide p { margin-bottom: 1rem; color: var(--text-secondary); }
+        .slide p strong { color: var(--text-primary); }
+        .slide ul, .slide ol { margin-bottom: 1rem; padding-left: 1.5rem; color: var(--text-secondary); }
+        .slide li { margin-bottom: 0.4rem; }
+        .slide li strong { color: var(--text-primary); }
+        .slide code {
+            font-family: var(--font-mono);
+            font-size: 0.88em;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            padding: 0.05rem 0.35rem;
+            border-radius: 3px;
+            color: #c9d1d9;
+        }
+        .code-block {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 1.25rem 0;
+            overflow: hidden;
+        }
+        .code-header {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            background: rgba(118, 185, 0, 0.08);
+            padding: 0.4rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .code-block pre { margin: 0; padding: 1rem; overflow-x: auto; }
+        .code-block code {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #c9d1d9;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+        .kw { color: #ff7b72; }
+        .fn { color: #d2a8ff; }
+        .str { color: #a5d6ff; }
+        .cm { color: #8b949e; font-style: italic; }
+        .num { color: #79c0ff; }
+        .type { color: #ffa657; }
+        .dir { color: #ff7b72; }
+        .mac { color: #ffa657; }
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.25rem 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th {
+            background: var(--bg-code);
+            color: var(--accent);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-display);
+            white-space: nowrap;
+        }
+        td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: rgba(13, 17, 23, 0.5); }
+        .diagram-flow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .diagram-box {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-align: center;
+            white-space: nowrap;
+        }
+        .diagram-box.accent { border-color: var(--accent); color: var(--accent); background: rgba(118, 185, 0, 0.08); }
+        .diagram-box.dim { color: var(--text-secondary); border-color: var(--border); }
+        .diagram-arrow { color: var(--accent); font-size: 1.3rem; font-weight: 700; }
+        .diagram-vertical {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .diagram-vertical .diagram-arrow { font-size: 1.1rem; }
+        .hierarchy {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .hierarchy-level { display: flex; align-items: center; gap: 0.75rem; }
+        .hierarchy-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 80px;
+            text-align: right;
+        }
+        .hierarchy-items { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+        .hierarchy-item {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        .hierarchy-item.accent { border-color: var(--accent); color: var(--accent); background: rgba(118, 185, 0, 0.08); }
+        .diagram-grid {
+            display: grid;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .diagram-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+        .diagram-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .diagram-panel {
+            padding: 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+        .diagram-panel.accent-border { border-left: 3px solid var(--accent); }
+        .diagram-panel h4 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+        .diagram-panel p, .diagram-panel ul { font-size: 0.85rem; }
+        .callout {
+            background: var(--bg-card);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 1.25rem;
+            margin: 1.25rem 0;
+        }
+        .callout p { margin-bottom: 0; }
+        .callout p + p { margin-top: 0.5rem; }
+        .callout .callout-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.3rem;
+        }
+        .contents-list { list-style: none; padding-left: 0; counter-reset: contents; }
+        .contents-list li {
+            counter-increment: contents;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .contents-list li:last-child { border-bottom: none; }
+        .contents-list li::before {
+            content: counter(contents, decimal-leading-zero);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            min-width: 2rem;
+        }
+        .contents-list a { color: var(--text-primary); text-decoration: none; transition: color 0.2s; }
+        .contents-list a:hover { color: var(--accent); }
+        .footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            max-width: var(--max-width);
+            margin: 0 auto;
+        }
+        .footer a { color: var(--accent); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        .canvas-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.25rem 0;
+            overflow-x: auto;
+        }
+        .canvas-wrap canvas, .canvas-wrap svg { display: block; margin: 0 auto; max-width: 100%; }
+        .badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            padding: 0.1rem 0.45rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            vertical-align: middle;
+            margin-left: 0.3rem;
+        }
+        .badge.ok    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+        .badge.warn  { border-color: #ffa657; color: #ffa657; background: rgba(255,166,87,0.08); }
+        .badge.bad   { border-color: #ff7b72; color: #ff7b72; background: rgba(255,123,114,0.08); }
+        @media (max-width: 640px) {
+            .slide { padding: 3rem 1rem; min-height: auto; }
+            .slide-number { font-size: 3rem; top: 1.5rem; right: 1rem; }
+            .slide h2 { font-size: 1.5rem; }
+            .diagram-grid.cols-2, .diagram-grid.cols-3 { grid-template-columns: 1fr; }
+            .pipeline { gap: 0.15rem; }
+            .pipeline-step { font-size: 0.6rem; padding: 0.2rem 0.4rem; }
+            .hero h1 { font-size: 1.8rem; }
+            table { font-size: 0.78rem; }
+        }
+    </style>
+</head>
+<body>
+<header class="hero">
+    <div class="series-label">Model Context Protocol Series — Presentation 02</div>
+    <h1>Transports &amp; <span class="accent">The Wire</span></h1>
+    <p class="subtitle">stdio framing, the deprecated HTTP+SSE, modern Streamable HTTP, sessions, resumability via <code>Last-Event-ID</code>, the security headers your server must check, and one fully-annotated packet trace.</p>
+
+    <div class="tags">
+        <span class="tag">stdio</span>
+        <span class="tag">HTTP+SSE (deprecated)</span>
+        <span class="tag">Streamable HTTP</span>
+        <span class="tag">Sessions</span>
+        <span class="tag">Resumability</span>
+        <span class="tag">Origin</span>
+    </div>
+
+    <div class="pipeline">
+        <span class="pipeline-step">stdio</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Framing</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">HTTP+SSE</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Streamable HTTP</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Sessions</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Resume</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Auth</span>
+    </div>
+</header>
+
+<section class="slide" id="slide-00">
+    <div class="slide-number">00</div>
+    <h2>Topics We'll Cover</h2>
+    <ul class="contents-list">
+        <li><a href="#slide-01">Why MCP Needs More Than One Transport</a></li>
+        <li><a href="#slide-02">stdio &mdash; The Default for Local Servers</a></li>
+        <li><a href="#slide-03">HTTP+SSE (Legacy) &mdash; What It Did and Why It Died</a></li>
+        <li><a href="#slide-04">Streamable HTTP &mdash; Single Endpoint, Two Modes</a></li>
+        <li><a href="#slide-05">Sessions and the <code>Mcp-Session-Id</code> Header</a></li>
+        <li><a href="#slide-06">Resumable Streams &mdash; <code>Last-Event-ID</code> in Practice</a></li>
+        <li><a href="#slide-07">Auth, Origin, and the DNS-Rebinding Trap</a></li>
+        <li><a href="#slide-08">Wire Capture &mdash; A Real Session, Byte by Byte</a></li>
+        <li><a href="#slide-09">Choosing a Transport in 2026</a></li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-01">
+    <div class="slide-number">01</div>
+    <h2>Why MCP Needs More Than One Transport</h2>
+    <p>The protocol is transport-agnostic by design &mdash; the JSON-RPC envelopes don't care how they got there. But the <em>practical</em> deployments split cleanly into two worlds with different constraints, and the spec ships first-class transports for each.</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Local servers &mdash; stdio</h4>
+            <p>Spawned as a child process by the host. No network exposure. No auth. The host's user trust transfers directly. This is how 90% of community servers ship.</p>
+            <p style="margin-top:0.5rem;"><strong>Examples:</strong> filesystem, git, sqlite, any server you <code>uvx</code> or <code>npx</code> from the command line.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Remote servers &mdash; Streamable HTTP</h4>
+            <p>One server, many clients across the public internet. Needs auth (OAuth 2.1), session management, reconnection, multiplexing. Originally HTTP+SSE; superseded by Streamable HTTP in <code>2025-03-26</code>.</p>
+            <p style="margin-top:0.5rem;"><strong>Examples:</strong> a hosted Linear server, a SaaS observability server, anything you point at over <code>https://</code>.</p>
+        </div>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Custom transports are allowed</div>
+        <p>The spec explicitly says implementations MAY add their own transports (named pipes, WebSockets, gRPC) provided they preserve JSON-RPC semantics, message ordering and the lifecycle. But anything custom-built breaks interop with mainstream hosts &mdash; in practice, ship one of the two standard transports.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-02">
+    <div class="slide-number">02</div>
+    <h2>stdio &mdash; The Default for Local Servers</h2>
+    <p>The host launches the server as a subprocess and pipes stdin/stdout. That's it. Each side reads JSON-RPC messages from one stream and writes to the other.</p>
+
+    <h3>Framing rules &mdash; line-delimited JSON</h3>
+    <ul>
+        <li>Each message is a single JSON object on a single line, terminated with <code>\n</code> (LF). No embedded newlines &mdash; if your JSON is pretty-printed, you've corrupted the stream.</li>
+        <li><strong>STDOUT carries protocol only.</strong> One stray <code>print()</code> call in your server will desynchronise the client's parser.</li>
+        <li><strong>STDERR carries logs only.</strong> The host MAY display it for debugging, but it must not contain JSON-RPC messages.</li>
+        <li>Encoding is UTF-8. Messages must not contain embedded NULs.</li>
+        <li>Since <code>2025-06-18</code>, JSON-RPC <em>batches</em> (a top-level array) are no longer permitted on any transport, including stdio.</li>
+    </ul>
+
+    <div class="code-block">
+        <div class="code-header">Two messages on stdio (each one literal line)</div>
+<pre><code>{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"x","version":"0"}}}
+{"jsonrpc":"2.0","method":"notifications/initialized"}</code></pre>
+    </div>
+
+    <h3>How the host configures stdio servers</h3>
+    <p>The host's config typically maps a name to a command line and an environment. Claude Desktop's <code>claude_desktop_config.json</code> is representative:</p>
+
+    <div class="code-block">
+        <div class="code-header">claude_desktop_config.json</div>
+<pre><code><span class="str">{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/me/projects"],
+      "env": { "DEBUG": "1" }
+    },
+    "sqlite": {
+      "command": "uvx",
+      "args": ["mcp-server-sqlite", "--db-path", "/tmp/test.db"]
+    }
+  }
+}</span></code></pre>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Common bug: blocked stdout</div>
+        <p>If your server writes to stdout faster than the host reads, the OS pipe buffer fills (typically 64 KiB on Linux) and your <code>write()</code> blocks forever. Servers that emit large resource bodies should chunk and yield. The MCP Inspector is invaluable here &mdash; it shows the stall as a hung request.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-03">
+    <div class="slide-number">03</div>
+    <h2>HTTP+SSE (Legacy) &mdash; What It Did and Why It Died</h2>
+    <p>The original web transport, shipped with <code>2024-11-05</code> and deprecated in <code>2025-03-26</code>. Worth understanding because (a) servers in the wild still use it and (b) it explains the design pressure that produced Streamable HTTP.</p>
+
+    <h3>Two endpoints, two directions</h3>
+    <div class="diagram-flow">
+        <div class="diagram-box dim">Client</div>
+        <span class="diagram-arrow">&rarr;</span>
+        <div class="diagram-box accent">POST /messages</div>
+        <span class="diagram-arrow">&rarr;</span>
+        <div class="diagram-box dim">Server</div>
+    </div>
+    <div class="diagram-flow">
+        <div class="diagram-box dim">Client</div>
+        <span class="diagram-arrow">&larr;</span>
+        <div class="diagram-box accent">GET /sse  (text/event-stream, long-lived)</div>
+        <span class="diagram-arrow">&larr;</span>
+        <div class="diagram-box dim">Server</div>
+    </div>
+
+    <p>The first message on <code>/sse</code> was a synthetic <code>endpoint</code> event telling the client which URL to <code>POST</code> to. Every subsequent server-to-client message arrived as an SSE <code>data:</code> event on the same stream.</p>
+
+    <div class="code-block">
+        <div class="code-header">A snippet of the SSE stream</div>
+<pre><code>event: endpoint
+data: /messages?session_id=8c8a7b...
+
+event: message
+data: {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05",...}}
+
+event: message
+data: {"jsonrpc":"2.0","method":"notifications/tools/list_changed"}</code></pre>
+    </div>
+
+    <h3>Why it died</h3>
+    <ul>
+        <li><strong>Two endpoints meant two failure modes.</strong> If the SSE socket dropped while a POST was in flight, the response could never reach the client.</li>
+        <li><strong>No clean resumability.</strong> Reconnecting <code>/sse</code> meant losing every message between the disconnect and the reconnect.</li>
+        <li><strong>Awkward for stateless infra.</strong> Load balancers that serialise on session IDs need a single canonical URL, not a flow that bounces between two paths.</li>
+        <li><strong>SSE's request/response asymmetry</strong> made it impossible for a single POST to receive a streamed response (e.g. progress notifications during a long tool call).</li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-04">
+    <div class="slide-number">04</div>
+    <h2>Streamable HTTP &mdash; Single Endpoint, Two Modes</h2>
+    <p>Introduced in <code>2025-03-26</code>. One URL, typically <code>/mcp</code> or <code>/</code>, that accepts both <code>POST</code> and <code>GET</code>. The server picks <em>per request</em> whether to respond with a single JSON body or to upgrade to an SSE stream.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Method</th><th>Body</th><th>Server response</th><th>Used for</th></tr></thead>
+            <tbody>
+                <tr><td><code>POST /mcp</code></td><td>One JSON-RPC <em>request</em> or <em>notification</em></td><td><code>200</code> with <code>application/json</code> (single response) <em>or</em> <code>200</code> with <code>text/event-stream</code> (streamed response + intermediate notifications) <em>or</em> <code>202 Accepted</code> (notification-only, no body)</td><td>Every client-initiated message</td></tr>
+                <tr><td><code>GET /mcp</code></td><td>(none)</td><td><code>200</code> with <code>text/event-stream</code> &mdash; pure server-to-client channel for unsolicited notifications. <code>405 Method Not Allowed</code> if the server doesn't support server-initiated streams.</td><td>Long-lived listening channel</td></tr>
+                <tr><td><code>DELETE /mcp</code></td><td>(none, with <code>Mcp-Session-Id</code>)</td><td><code>204 No Content</code> &mdash; terminates the session</td><td>Clean session shutdown</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Why two response modes for one POST?</h3>
+    <p>The same call can need either shape. <code>tools/list</code> takes microseconds and returns a single JSON object. <code>tools/call</code> on a long-running operation may want to emit <code>notifications/progress</code> for two minutes before returning the final tool result. The server signals which mode by setting the <code>Content-Type</code> header on the response.</p>
+
+    <div class="code-block">
+        <div class="code-header">POST returning a streamed multi-message response</div>
+<pre><code>POST /mcp HTTP/1.1
+Host: api.example.com
+Authorization: Bearer eyJhbG...
+MCP-Protocol-Version: 2025-06-18
+Mcp-Session-Id: 1d31a3f4-...
+Accept: application/json, text/event-stream
+Content-Type: application/json
+
+{"jsonrpc":"2.0","id":42,"method":"tools/call",
+ "params":{"name":"long_query","arguments":{"sql":"..."}}}
+
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+Cache-Control: no-cache
+Connection: keep-alive
+
+event: message
+id: 1
+data: {"jsonrpc":"2.0","method":"notifications/progress",
+       "params":{"progressToken":"abc","progress":0.25}}
+
+event: message
+id: 2
+data: {"jsonrpc":"2.0","method":"notifications/progress",
+       "params":{"progressToken":"abc","progress":0.75}}
+
+event: message
+id: 3
+data: {"jsonrpc":"2.0","id":42,"result":{...}}</code></pre>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">The <code>Accept</code> header is mandatory</div>
+        <p>Clients MUST send <code>Accept: application/json, text/event-stream</code> on every POST. Servers reject any other Accept with <code>400</code>. This is what tells a stateless reverse-proxy that the response could be either shape and to disable buffering accordingly.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-05">
+    <div class="slide-number">05</div>
+    <h2>Sessions and the <code>Mcp-Session-Id</code> Header</h2>
+    <p>Sessions are optional but standardised. A server that wants to remember client state across requests opts in by returning <code>Mcp-Session-Id</code> on the <code>initialize</code> response.</p>
+
+    <div class="hierarchy">
+        <div class="hierarchy-level">
+            <span class="hierarchy-label">step 1</span>
+            <div class="hierarchy-items">
+                <span class="hierarchy-item">POST /mcp</span>
+                <span class="hierarchy-item">{ method: "initialize", ... }</span>
+            </div>
+        </div>
+        <div class="hierarchy-level">
+            <span class="hierarchy-label">step 2</span>
+            <div class="hierarchy-items">
+                <span class="hierarchy-item accent">200 OK</span>
+                <span class="hierarchy-item accent">Mcp-Session-Id: 1d31a3f4-c1d4-4e9c-9e10-...</span>
+            </div>
+        </div>
+        <div class="hierarchy-level">
+            <span class="hierarchy-label">step 3+</span>
+            <div class="hierarchy-items">
+                <span class="hierarchy-item">POST /mcp</span>
+                <span class="hierarchy-item accent">Mcp-Session-Id: 1d31a3f4-...</span>
+                <span class="hierarchy-item">{ method: "tools/call", ... }</span>
+            </div>
+        </div>
+        <div class="hierarchy-level">
+            <span class="hierarchy-label">end</span>
+            <div class="hierarchy-items">
+                <span class="hierarchy-item">DELETE /mcp</span>
+                <span class="hierarchy-item accent">Mcp-Session-Id: 1d31a3f4-...</span>
+                <span class="hierarchy-item">&rarr; 204</span>
+            </div>
+        </div>
+    </div>
+
+    <h3>Server-side state semantics</h3>
+    <ul>
+        <li>The session ID MUST be a globally unique, cryptographically random value &mdash; not a sequential counter.</li>
+        <li>If the server has invalidated the session (timeout, redeploy, eviction), it returns <code>404 Not Found</code> on requests carrying that ID. The client MUST then re-<code>initialize</code>.</li>
+        <li>The session is the canonical place to attach: capability negotiation results, the agreed protocol version, the OAuth principal, scratch caches, subscription lists.</li>
+        <li>For horizontally-scaled servers, sticky-routing on this header is the simplest correct approach &mdash; or store session state in shared infrastructure.</li>
+    </ul>
+
+    <div class="callout">
+        <div class="callout-label">Stateless servers are allowed too</div>
+        <p>If your server has no per-session state (it's a thin shim over an idempotent HTTP API, say) you can simply not return <code>Mcp-Session-Id</code> at all. Every request is then standalone &mdash; the client just won't bother sending one back. This is the easiest deployment shape if your model fits.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-06">
+    <div class="slide-number">06</div>
+    <h2>Resumable Streams &mdash; <code>Last-Event-ID</code> in Practice</h2>
+    <p>SSE has had a built-in resumption mechanism since HTML5: when the browser reconnects to a stream, it sends the last <code>id:</code> it saw in the <code>Last-Event-ID</code> request header. The server then replays everything after that ID. MCP exploits this directly.</p>
+
+    <div class="canvas-wrap">
+        <svg viewBox="0 0 720 300" width="720" height="300" xmlns="http://www.w3.org/2000/svg">
+            <style>
+                .lane  { stroke: #30363d; stroke-dasharray: 2 3; }
+                .ll    { fill: #76B900; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; }
+                .req   { stroke: #76B900; stroke-width: 1.5; fill: none; marker-end: url(#mhh); }
+                .resp  { stroke: #d2a8ff; stroke-width: 1.5; fill: none; marker-end: url(#mhp); }
+                .drop  { stroke: #ff7b72; stroke-width: 2; }
+                .lbl   { fill: #e6edf3; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+                .sub   { fill: #8b949e; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+            </style>
+            <defs>
+                <marker id="mhh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#76B900"/>
+                </marker>
+                <marker id="mhp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#d2a8ff"/>
+                </marker>
+            </defs>
+
+            <text x="120" y="22" class="ll">Client</text>
+            <text x="540" y="22" class="ll">Server</text>
+            <line x1="160" y1="35" x2="160" y2="290" class="lane"/>
+            <line x1="560" y1="35" x2="560" y2="290" class="lane"/>
+
+            <path d="M 160 60  L 555 60"  class="req"/>
+            <text x="170" y="55"  class="lbl">POST /mcp  { "id":42, "tools/call" }</text>
+            <path d="M 560 90  L 165 90"  class="resp"/>
+            <text x="170" y="85"  class="lbl">200 SSE  &mdash; data: progress  id: 1</text>
+            <path d="M 560 115 L 165 115" class="resp"/>
+            <text x="170" y="110" class="lbl">data: progress  id: 2</text>
+
+            <line x1="100" y1="135" x2="640" y2="135" class="drop"/>
+            <text x="270" y="150" fill="#ff7b72" font-family="'JetBrains Mono',monospace" font-size="11">network drop after id:2</text>
+
+            <path d="M 160 180 L 555 180" class="req"/>
+            <text x="170" y="175" class="lbl">GET /mcp  Last-Event-ID: 2  (reconnect)</text>
+            <path d="M 560 210 L 165 210" class="resp"/>
+            <text x="170" y="205" class="lbl">200 SSE &mdash; data: progress  id: 3  (replayed)</text>
+            <path d="M 560 235 L 165 235" class="resp"/>
+            <text x="170" y="230" class="lbl">data: result for id 42  id: 4</text>
+
+            <text x="20"  y="270" class="sub">Server tracks per-session event log; replays anything after Last-Event-ID. Cap retention to bound memory.</text>
+        </svg>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Implementation note</div>
+        <p>Replay buffers don't need to be unbounded. A reasonable server keeps the last N events (say 1000) per session and replays from there; if <code>Last-Event-ID</code> is older than the buffer, return a fresh stream and let the client re-issue the affected request. The client SHOULD treat any in-flight request as &ldquo;result unknown&rdquo; on disconnect and decide whether to retry based on whether the tool was idempotent.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-07">
+    <div class="slide-number">07</div>
+    <h2>Auth, Origin, and the DNS-Rebinding Trap</h2>
+    <p>Three headers carry all the security weight at the transport boundary:</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Header</th><th>Required</th><th>Purpose</th></tr></thead>
+            <tbody>
+                <tr><td><code>Authorization: Bearer &lt;token&gt;</code></td><td>Remote servers</td><td>OAuth 2.1 access token. Validated per-request against the issuer's metadata. Audience MUST match this server's URL (RFC 8707).</td></tr>
+                <tr><td><code>MCP-Protocol-Version</code></td><td>All HTTP requests after <code>initialize</code></td><td>Echoes the negotiated protocol version. A mismatch SHOULD be rejected with <code>400</code>.</td></tr>
+                <tr><td><code>Origin</code></td><td>Localhost servers binding HTTP</td><td>Validates that the request came from a permitted origin &mdash; not a malicious page that lured a browser into resolving <code>evil.com</code> to <code>127.0.0.1</code>.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>The DNS-rebinding attack on local HTTP servers</h3>
+    <p>A surprising number of MCP servers expose Streamable HTTP on <code>http://127.0.0.1:PORT</code> for development. Without an Origin check, any web page the user visits can issue <code>fetch()</code> calls against that loopback port using DNS rebinding (resolve <code>attacker.com</code> first to a public IP, then to <code>127.0.0.1</code>). The result: a webpage drains your tokens.</p>
+
+    <div class="code-block">
+        <div class="code-header">The two checks every loopback HTTP server MUST do</div>
+<pre><code><span class="cm">// 1. Bind explicitly to loopback, not 0.0.0.0</span>
+server.listen(PORT, <span class="str">"127.0.0.1"</span>);
+
+<span class="cm">// 2. Reject requests with foreign Origin</span>
+<span class="kw">const</span> ALLOWED = <span class="kw">new</span> Set([<span class="str">"http://localhost"</span>, <span class="str">"app://obsidian.md"</span>, ...]);
+app.use((req, res, next) =&gt; {
+  <span class="kw">const</span> origin = req.headers.origin;
+  <span class="kw">if</span> (origin &amp;&amp; !ALLOWED.has(<span class="kw">new</span> URL(origin).origin))
+    <span class="kw">return</span> res.status(<span class="num">403</span>).end();
+  next();
+});</code></pre>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Why the spec calls this out</div>
+        <p>The Origin header is one of the few HTTP headers that the browser <em>refuses to let JavaScript override</em>. That's why it's the right gate: it pins down the actual page that initiated the request, even after a DNS rebind. Deck 04 (Security) goes deeper on the wider OAuth threat model.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-08">
+    <div class="slide-number">08</div>
+    <h2>Wire Capture &mdash; A Real Session, Byte by Byte</h2>
+    <p>Annotated TCP-level trace of a Streamable HTTP session: handshake, a tool list, a streamed tool call, a server-initiated notification, and a clean shutdown.</p>
+
+    <div class="code-block">
+        <div class="code-header">[1] Initialize &mdash; client opens with a normal POST</div>
+<pre><code>POST /mcp HTTP/1.1
+Host: search.acme.io
+Authorization: Bearer eyJhbGciOi...
+Accept: application/json, text/event-stream
+Content-Type: application/json
+Content-Length: 218
+
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{
+  "protocolVersion":"2025-06-18",
+  "capabilities":{"sampling":{},"elicitation":{}},
+  "clientInfo":{"name":"claude-code","version":"2.1.0"}}}
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+Mcp-Session-Id: 1d31a3f4-c1d4-4e9c-9e10-bd8c2c7d3001
+Content-Length: 312
+
+{"jsonrpc":"2.0","id":1,"result":{
+  "protocolVersion":"2025-06-18",
+  "capabilities":{"tools":{"listChanged":true}},
+  "serverInfo":{"name":"acme-search","version":"3.4.0"}}}</code></pre>
+    </div>
+
+    <div class="code-block">
+        <div class="code-header">[2] notifications/initialized &mdash; client confirms, no body, 202</div>
+<pre><code>POST /mcp HTTP/1.1
+Mcp-Session-Id: 1d31a3f4-...
+MCP-Protocol-Version: 2025-06-18
+Content-Type: application/json
+Accept: application/json, text/event-stream
+
+{"jsonrpc":"2.0","method":"notifications/initialized"}
+
+HTTP/1.1 202 Accepted
+Content-Length: 0</code></pre>
+    </div>
+
+    <div class="code-block">
+        <div class="code-header">[3] tools/call with progress &mdash; server upgrades to SSE</div>
+<pre><code>POST /mcp HTTP/1.1
+Mcp-Session-Id: 1d31a3f4-...
+MCP-Protocol-Version: 2025-06-18
+
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{
+  "name":"deep_search","arguments":{"q":"quark&ndash;gluon plasma","depth":3}}}
+
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+Mcp-Session-Id: 1d31a3f4-...
+
+event: message
+id: 1
+data: {"jsonrpc":"2.0","method":"notifications/progress",
+       "params":{"progressToken":"x","progress":0.33,"total":1.0}}
+
+event: message
+id: 2
+data: {"jsonrpc":"2.0","method":"notifications/progress",
+       "params":{"progressToken":"x","progress":0.66}}
+
+event: message
+id: 3
+data: {"jsonrpc":"2.0","id":2,"result":{
+       "content":[{"type":"text","text":"42 sources..."}],
+       "isError":false}}</code></pre>
+    </div>
+
+    <div class="code-block">
+        <div class="code-header">[4] Listening channel &mdash; client opens GET for unsolicited events</div>
+<pre><code>GET /mcp HTTP/1.1
+Mcp-Session-Id: 1d31a3f4-...
+Accept: text/event-stream
+Last-Event-ID: 0
+
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+
+event: message
+id: 17
+data: {"jsonrpc":"2.0","method":"notifications/tools/list_changed"}</code></pre>
+    </div>
+
+    <div class="code-block">
+        <div class="code-header">[5] Clean shutdown</div>
+<pre><code>DELETE /mcp HTTP/1.1
+Mcp-Session-Id: 1d31a3f4-...
+
+HTTP/1.1 204 No Content</code></pre>
+    </div>
+</section>
+
+<section class="slide" id="slide-09">
+    <div class="slide-number">09</div>
+    <h2>Choosing a Transport in 2026</h2>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Use stdio when&hellip;</h4>
+            <ul>
+                <li>The server runs locally beside the host</li>
+                <li>You don't want to deal with auth at all</li>
+                <li>Distribution is via <code>uvx</code> / <code>npx</code> / a binary in the user's PATH</li>
+                <li>Resource lifetime equals the host's session</li>
+            </ul>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Use Streamable HTTP when&hellip;</h4>
+            <ul>
+                <li>The server is hosted as a service</li>
+                <li>One server instance backs many users</li>
+                <li>You need OAuth (you almost always do)</li>
+                <li>Long-running tools need to push progress</li>
+                <li>You want resumable sessions across reconnects</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>Migrating off HTTP+SSE</h3>
+    <p>If you ship an HTTP+SSE server today, the migration is incremental:</p>
+    <ol>
+        <li>Keep the old <code>POST /messages</code> + <code>GET /sse</code> endpoints alive for one major version of your client.</li>
+        <li>Add the unified <code>/mcp</code> endpoint that speaks Streamable HTTP.</li>
+        <li>Advertise the new endpoint via your service-discovery channel (homepage, well-known, README).</li>
+        <li>Drop the old endpoints once usage falls below your retention threshold.</li>
+    </ol>
+
+    <div class="callout">
+        <div class="callout-label">Take-aways</div>
+        <p><strong>stdio is JSON-on-newlines.</strong> Don't print to stdout. Don't batch. Don't embed newlines.</p>
+        <p><strong>Streamable HTTP is one URL, two response shapes.</strong> The server picks per request between a flat JSON response and an SSE stream.</p>
+        <p><strong>Sessions are an opt-in header</strong> and the right place to anchor protocol version, capabilities, OAuth principal and per-stream replay buffers.</p>
+        <p><strong>Resumability is free</strong> if you tag SSE events with monotonic IDs and keep a bounded replay buffer.</p>
+        <p><strong>Origin and audience</strong> are the two checks that stop the easy attacks &mdash; covered in detail in deck 04.</p>
+    </div>
+</section>
+
+<footer class="footer">
+    <p>Part of the <a href="https://github.com/BrendanJamesLynskey/LLMs#model-context-protocol-mcp">Model Context Protocol Series</a></p>
+    <p style="margin-top: 0.5rem; font-size: 0.8rem;"><a href="https://github.com/BrendanJamesLynskey/LLMs#model-context-protocol-mcp">Back to Series Index</a></p>
+</footer>
+<script>
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.slide').forEach(slide => {
+        slide.style.opacity = '0';
+        slide.style.transform = 'translateY(30px)';
+        slide.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(slide);
+    });
+</script>
+</body>
+</html>
