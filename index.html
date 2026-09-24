@@ -9,15 +9,15 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #0a0a0a;
-            --bg-card: #0d1117;
-            --bg-code: #161b22;
-            --text-primary: #e6edf3;
-            --text-secondary: #8b949e;
-            --accent: #76B900;
-            --accent-dim: #76B90044;
-            --accent-glow: #76B90033;
-            --border: #21262d;
+            --bg-primary: #1c1815;
+            --bg-card: #231e1a;
+            --bg-code: #2b2520;
+            --text-primary: #efe8dc;
+            --text-secondary: #a2978b;
+            --accent: #aabd59;
+            --accent-dim: #aabd5944;
+            --accent-glow: #aabd5933;
+            --border: #3a322b;
             --font-display: 'Space Grotesk', sans-serif;
             --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
             --font-body: 'Inter', sans-serif;
@@ -165,7 +165,7 @@
             border: 1px solid var(--border);
             padding: 0.05rem 0.35rem;
             border-radius: 3px;
-            color: #c9d1d9;
+            color: #dad1c5;
         }
         .code-block {
             background: var(--bg-code);
@@ -178,7 +178,7 @@
             font-family: var(--font-mono);
             font-size: 0.75rem;
             color: var(--accent);
-            background: rgba(118, 185, 0, 0.08);
+            background: rgba(170,189,89,0.08);
             padding: 0.4rem 1rem;
             border-bottom: 1px solid var(--border);
         }
@@ -187,19 +187,19 @@
             font-family: var(--font-mono);
             font-size: 0.85rem;
             line-height: 1.6;
-            color: #c9d1d9;
+            color: #dad1c5;
             background: transparent;
             border: none;
             padding: 0;
         }
-        .kw { color: #ff7b72; }
-        .fn { color: #d2a8ff; }
-        .str { color: #a5d6ff; }
-        .cm { color: #8b949e; font-style: italic; }
-        .num { color: #79c0ff; }
-        .type { color: #ffa657; }
-        .dir { color: #ff7b72; }
-        .mac { color: #ffa657; }
+        .kw { color: #de805a; }
+        .fn { color: #d7bbdf; }
+        .str { color: #bcdbd4; }
+        .cm { color: #a2978b; font-style: italic; }
+        .num { color: #97cdc6; }
+        .type { color: #e3b174; }
+        .dir { color: #de805a; }
+        .mac { color: #e3b174; }
         .table-wrap {
             overflow-x: auto;
             margin: 1.25rem 0;
@@ -223,7 +223,7 @@
             color: var(--text-secondary);
         }
         tr:last-child td { border-bottom: none; }
-        tr:nth-child(even) td { background: rgba(13, 17, 23, 0.5); }
+        tr:nth-child(even) td { background: rgba(35,30,26,0.5); }
         .diagram-flow {
             display: flex;
             flex-wrap: wrap;
@@ -247,7 +247,7 @@
             text-align: center;
             white-space: nowrap;
         }
-        .diagram-box.accent { border-color: var(--accent); color: var(--accent); background: rgba(118, 185, 0, 0.08); }
+        .diagram-box.accent { border-color: var(--accent); color: var(--accent); background: rgba(170,189,89,0.08); }
         .diagram-box.dim { color: var(--text-secondary); border-color: var(--border); }
         .diagram-arrow { color: var(--accent); font-size: 1.3rem; font-weight: 700; }
         .diagram-vertical {
@@ -290,7 +290,7 @@
             border: 1px solid var(--border);
             color: var(--text-secondary);
         }
-        .hierarchy-item.accent { border-color: var(--accent); color: var(--accent); background: rgba(118, 185, 0, 0.08); }
+        .hierarchy-item.accent { border-color: var(--accent); color: var(--accent); background: rgba(170,189,89,0.08); }
         .diagram-grid {
             display: grid;
             gap: 0.75rem;
@@ -384,8 +384,8 @@
             margin-left: 0.3rem;
         }
         .badge.ok    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-        .badge.warn  { border-color: #ffa657; color: #ffa657; background: rgba(255,166,87,0.08); }
-        .badge.bad   { border-color: #ff7b72; color: #ff7b72; background: rgba(255,123,114,0.08); }
+        .badge.warn  { border-color: #e3b174; color: #e3b174; background: rgba(227,177,116,0.08); }
+        .badge.bad   { border-color: #de805a; color: #de805a; background: rgba(222,128,90,0.08); }
         @media (max-width: 640px) {
             .slide { padding: 3rem 1rem; min-height: auto; }
             .slide-number { font-size: 3rem; top: 1.5rem; right: 1rem; }
@@ -678,20 +678,20 @@ data: {"jsonrpc":"2.0","id":42,"result":{...}}</code></pre>
     <div class="canvas-wrap">
         <svg viewBox="0 0 720 300" width="720" height="300" xmlns="http://www.w3.org/2000/svg">
             <style>
-                .lane  { stroke: #30363d; stroke-dasharray: 2 3; }
-                .ll    { fill: #76B900; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; }
-                .req   { stroke: #76B900; stroke-width: 1.5; fill: none; marker-end: url(#mhh); }
-                .resp  { stroke: #d2a8ff; stroke-width: 1.5; fill: none; marker-end: url(#mhp); }
-                .drop  { stroke: #ff7b72; stroke-width: 2; }
-                .lbl   { fill: #e6edf3; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
-                .sub   { fill: #8b949e; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+                .lane  { stroke: #463e36; stroke-dasharray: 2 3; }
+                .ll    { fill: #aabd59; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; }
+                .req   { stroke: #aabd59; stroke-width: 1.5; fill: none; marker-end: url(#mhh); }
+                .resp  { stroke: #d7bbdf; stroke-width: 1.5; fill: none; marker-end: url(#mhp); }
+                .drop  { stroke: #de805a; stroke-width: 2; }
+                .lbl   { fill: #efe8dc; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+                .sub   { fill: #a2978b; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
             </style>
             <defs>
                 <marker id="mhh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#76B900"/>
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#aabd59"/>
                 </marker>
                 <marker id="mhp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#d2a8ff"/>
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#d7bbdf"/>
                 </marker>
             </defs>
 
@@ -708,7 +708,7 @@ data: {"jsonrpc":"2.0","id":42,"result":{...}}</code></pre>
             <text x="170" y="110" class="lbl">data: progress  id: 2</text>
 
             <line x1="100" y1="135" x2="640" y2="135" class="drop"/>
-            <text x="270" y="150" fill="#ff7b72" font-family="'JetBrains Mono',monospace" font-size="11">network drop after id:2</text>
+            <text x="270" y="150" fill="#de805a" font-family="'JetBrains Mono',monospace" font-size="11">network drop after id:2</text>
 
             <path d="M 160 180 L 555 180" class="req"/>
             <text x="170" y="175" class="lbl">GET /mcp  Last-Event-ID: 2  (reconnect)</text>
