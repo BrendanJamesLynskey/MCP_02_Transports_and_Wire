@@ -398,13 +398,14 @@
         }
     /* deck-mobile-fix:hero */ .hero{overflow:hidden}@supports (overflow-x:clip){.hero{overflow:visible;overflow-x:clip}}
     /* deck-mobile-fix:phone */ @media (max-width:640px){.diagram-box,.tier-fill,.section-divider>span,.action-btn{white-space:normal;overflow-wrap:anywhere}.diagram-grid>*,.diagram-panel,.diagram-box,.code-block,.callout,.metric,.control-group,.control-row>*,.pipeline-body,.roll-track>*,.tier-fill,.timeline-row>*{min-width:0;max-width:100%}p,li,a,code,td,th,.callout,.diagram-panel{overflow-wrap:break-word}pre{max-width:100%;overflow-x:auto}table{display:block;max-width:100%;overflow-x:auto}.katex-display,.bits,.canvas-wrap,.influence-map-wrapper,.timeline-track,div:has(>.bank-cell){max-width:100%;overflow-x:auto;overflow-y:hidden}select,input,img,video,iframe,.action-btn{max-width:100%}canvas{max-width:100%;height:auto}}
-    </style>
+        /* era-tag (brief 28) */ .era-tag{display:inline-block;font-family:var(--font-mono);font-size:.7rem;font-weight:500;letter-spacing:.02em;text-transform:none;padding:.1rem .55rem;border-radius:999px;border:1px solid var(--border);color:var(--text-secondary);background:var(--bg-code);vertical-align:middle;margin-left:.4rem;white-space:nowrap}@media (max-width:640px){.era-tag{white-space:normal;max-width:100%}}.era-tag.now{color:var(--accent);border-color:var(--accent)}.spec-cite{font-size:.8rem;color:var(--text-secondary);margin-top:.6rem}.spec-cite a,.callout a,.diagram-panel a{color:var(--accent)}
+</style>
 </head>
 <body>
 <header class="hero">
     <div class="series-label">Model Context Protocol Series — Presentation 02</div>
     <h1>Transports &amp; <span class="accent">The Wire</span></h1>
-    <p class="subtitle">stdio framing, the deprecated HTTP+SSE, modern Streamable HTTP, sessions, resumability via <code>Last-Event-ID</code>, the security headers your server must check, and one fully-annotated packet trace.</p>
+    <p class="subtitle">stdio framing, the deprecated HTTP+SSE, modern Streamable HTTP, sessions, resumability via <code>Last-Event-ID</code>, the security headers your server must check, and one fully-annotated packet trace. Revision 2026-07-28 removed sessions, the GET stream and <code>Last-Event-ID</code> resumption; both eras are covered here, and handshake-era slides are tagged &ldquo;before 2026-07-28&rdquo;.</p>
 
     <div class="tags">
         <span class="tag">stdio</span>
@@ -440,10 +441,12 @@
         <li><a href="#slide-02">stdio &mdash; The Default for Local Servers</a></li>
         <li><a href="#slide-03">HTTP+SSE (Legacy) &mdash; What It Did and Why It Died</a></li>
         <li><a href="#slide-04">Streamable HTTP &mdash; Single Endpoint, Two Modes</a></li>
-        <li><a href="#slide-05">Sessions and the <code>Mcp-Session-Id</code> Header</a></li>
-        <li><a href="#slide-06">Resumable Streams &mdash; <code>Last-Event-ID</code> in Practice</a></li>
+        <li><a href="#slide-05">Sessions and the <code>Mcp-Session-Id</code> Header</a> <span class="era-tag">before 2026-07-28</span></li>
+        <li><a href="#slide-06">Resumable Streams &mdash; <code>Last-Event-ID</code> in Practice</a> <span class="era-tag">before 2026-07-28</span></li>
+        <li><a href="#slide-06b">Streamable HTTP in 2026-07-28 &mdash; Stateless POSTs and <code>subscriptions/listen</code></a> <span class="era-tag now">2026-07-28</span></li>
         <li><a href="#slide-07">Auth, Origin, and the DNS-Rebinding Trap</a></li>
-        <li><a href="#slide-08">Wire Capture &mdash; A Real Session, Byte by Byte</a></li>
+        <li><a href="#slide-08">Wire Capture &mdash; A Real Session, Byte by Byte</a> <span class="era-tag">before 2026-07-28</span></li>
+        <li><a href="#slide-08b">Wire Capture in 2026-07-28 &mdash; No Session at All</a> <span class="era-tag now">2026-07-28</span></li>
         <li><a href="#slide-09">Choosing a Transport in 2026</a></li>
     </ul>
 </section>
@@ -487,10 +490,17 @@
     </ul>
 
     <div class="code-block">
-        <div class="code-header">Two messages on stdio (each one literal line)</div>
+        <div class="code-header">Two messages on stdio (each one literal line) <span class="era-tag">before 2026-07-28</span></div>
 <pre><code>{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"x","version":"0"}}}
 {"jsonrpc":"2.0","method":"notifications/initialized"}</code></pre>
     </div>
+
+    <div class="code-block">
+        <div class="code-header">The first line on stdio in 2026-07-28 (no handshake) <span class="era-tag now">2026-07-28</span></div>
+<pre><code>{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}}}</code></pre>
+    </div>
+    <p>The framing rules are unchanged in 2026-07-28. What changed is the first message: there is no <code>initialize</code>; a client may open with any request carrying <code>_meta</code>, or with <code>server/discover</code>, which also tells it whether the subprocess is a legacy (handshake-only) server. The process is no longer a session: unrelated requests may interleave on it.</p>
+    <p class="spec-cite">Source: MCP specification 2026-07-28 &mdash; <a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio">stdio</a>; <a href="https://modelcontextprotocol.io/specification/2026-07-28/server/discover">Discovery</a>; <a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/index#statelessness">Overview: statelessness</a> (accessed 2026-10-08).</p>
 
     <h3>How the host configures stdio servers</h3>
     <p>The host's config typically maps a name to a command line and an environment. Claude Desktop's <code>claude_desktop_config.json</code> is representative:</p>
@@ -565,15 +575,15 @@ data: {"jsonrpc":"2.0","method":"notifications/tools/list_changed"}</code></pre>
 <section class="slide" id="slide-04">
     <div class="slide-number">04</div>
     <h2>Streamable HTTP &mdash; Single Endpoint, Two Modes</h2>
-    <p>Introduced in <code>2025-03-26</code>. One URL, typically <code>/mcp</code> or <code>/</code>, that accepts both <code>POST</code> and <code>GET</code>. The server picks <em>per request</em> whether to respond with a single JSON body or to upgrade to an SSE stream.</p>
+    <p>Introduced in <code>2025-03-26</code>. One URL, typically <code>/mcp</code> or <code>/</code>, that accepts both <code>POST</code> and <code>GET</code> (before 2026-07-28; from 2026-07-28 only <code>POST</code>, see slide 06b). The server picks <em>per request</em> whether to respond with a single JSON body or to upgrade to an SSE stream.</p>
 
     <div class="table-wrap">
         <table>
             <thead><tr><th>Method</th><th>Body</th><th>Server response</th><th>Used for</th></tr></thead>
             <tbody>
                 <tr><td><code>POST /mcp</code></td><td>One JSON-RPC <em>request</em> or <em>notification</em></td><td><code>200</code> with <code>application/json</code> (single response) <em>or</em> <code>200</code> with <code>text/event-stream</code> (streamed response + intermediate notifications) <em>or</em> <code>202 Accepted</code> (notification-only, no body)</td><td>Every client-initiated message</td></tr>
-                <tr><td><code>GET /mcp</code></td><td>(none)</td><td><code>200</code> with <code>text/event-stream</code> &mdash; pure server-to-client channel for unsolicited notifications. <code>405 Method Not Allowed</code> if the server doesn't support server-initiated streams.</td><td>Long-lived listening channel</td></tr>
-                <tr><td><code>DELETE /mcp</code></td><td>(none, with <code>Mcp-Session-Id</code>)</td><td><code>204 No Content</code> &mdash; terminates the session</td><td>Clean session shutdown</td></tr>
+                <tr><td><code>GET /mcp</code> <span class="era-tag">before 2026-07-28</span></td><td>(none)</td><td><code>200</code> with <code>text/event-stream</code> &mdash; pure server-to-client channel for unsolicited notifications. <code>405 Method Not Allowed</code> if the server doesn't support server-initiated streams.</td><td>Long-lived listening channel. <strong>2026-07-28:</strong> removed; a modern-only server answers <code>405</code>, and <code>subscriptions/listen</code> replaces it.</td></tr>
+                <tr><td><code>DELETE /mcp</code> <span class="era-tag">before 2026-07-28</span></td><td>(none, with <code>Mcp-Session-Id</code>)</td><td><code>204 No Content</code> &mdash; terminates the session</td><td>Clean session shutdown. <strong>2026-07-28:</strong> no sessions; <code>405</code>.</td></tr>
             </tbody>
         </table>
     </div>
@@ -582,7 +592,7 @@ data: {"jsonrpc":"2.0","method":"notifications/tools/list_changed"}</code></pre>
     <p>The same call can need either shape. <code>tools/list</code> takes microseconds and returns a single JSON object. <code>tools/call</code> on a long-running operation may want to emit <code>notifications/progress</code> for two minutes before returning the final tool result. The server signals which mode by setting the <code>Content-Type</code> header on the response.</p>
 
     <div class="code-block">
-        <div class="code-header">POST returning a streamed multi-message response</div>
+        <div class="code-header">POST returning a streamed multi-message response (2025-06-18 shape) <span class="era-tag">before 2026-07-28</span></div>
 <pre><code>POST /mcp HTTP/1.1
 Host: api.example.com
 Authorization: Bearer eyJhbG...
@@ -616,13 +626,19 @@ data: {"jsonrpc":"2.0","id":42,"result":{...}}</code></pre>
 
     <div class="callout">
         <div class="callout-label">The <code>Accept</code> header is mandatory</div>
-        <p>Clients MUST send <code>Accept: application/json, text/event-stream</code> on every POST. Servers reject any other Accept with <code>400</code>. This is what tells a stateless reverse-proxy that the response could be either shape and to disable buffering accordingly.</p>
+        <p>Clients MUST send <code>Accept: application/json, text/event-stream</code> on every POST. Servers reject any other Accept with <code>400</code>. This is what tells a stateless reverse-proxy that the response could be either shape and to disable buffering accordingly. (Still true in 2026-07-28.)</p>
     </div>
+    <p>In 2026-07-28 the same POST drops <code>Mcp-Session-Id</code> and the SSE <code>id:</code> lines, and adds <code>Mcp-Method: tools/call</code> and <code>Mcp-Name: long_query</code>; the body carries <code>_meta</code> with the protocol version, which must match the <code>MCP-Protocol-Version</code> header.</p>
+    <p class="spec-cite">Source: MCP specification 2026-07-28 &mdash; <a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http">Streamable HTTP</a>; <a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http#earlier-streamable-http-revisions">Streamable HTTP: earlier revisions</a> (accessed 2026-10-08).</p>
 </section>
 
 <section class="slide" id="slide-05">
     <div class="slide-number">05</div>
-    <h2>Sessions and the <code>Mcp-Session-Id</code> Header</h2>
+    <h2>Sessions and the <code>Mcp-Session-Id</code> Header <span class="era-tag">before 2026-07-28</span></h2>
+    <div class="callout">
+        <div class="callout-label">Removed in 2026-07-28</div>
+        <p>This slide describes protocol versions 2025-03-26 to 2025-11-25. Revision 2026-07-28 removed protocol-level sessions and the <code>Mcp-Session-Id</code> header: a modern-only server ignores the header and never mints one. State that must span calls becomes an explicit, server-minted handle passed as an ordinary tool argument. See slide 06b.</p>
+    </div>
     <p>Sessions are optional but standardised. A server that wants to remember client state across requests opts in by returning <code>Mcp-Session-Id</code> on the <code>initialize</code> response.</p>
 
     <div class="hierarchy">
@@ -674,7 +690,11 @@ data: {"jsonrpc":"2.0","id":42,"result":{...}}</code></pre>
 
 <section class="slide" id="slide-06">
     <div class="slide-number">06</div>
-    <h2>Resumable Streams &mdash; <code>Last-Event-ID</code> in Practice</h2>
+    <h2>Resumable Streams &mdash; <code>Last-Event-ID</code> in Practice <span class="era-tag">before 2026-07-28</span></h2>
+    <div class="callout">
+        <div class="callout-label">Removed in 2026-07-28</div>
+        <p>Stream resumption and redelivery (SSE event IDs and <code>Last-Event-ID</code>) were removed. A broken response stream loses the in-flight request; the client MUST re-issue it as a new request with a new ID, and closing the stream is itself the cancellation signal. (2025-11-25 had already made resumption optional for servers.)</p>
+    </div>
     <p>SSE has had a built-in resumption mechanism since HTML5: when the browser reconnects to a stream, it sends the last <code>id:</code> it saw in the <code>Last-Event-ID</code> request header. The server then replays everything after that ID. MCP exploits this directly.</p>
 
     <div class="canvas-wrap">
@@ -729,6 +749,59 @@ data: {"jsonrpc":"2.0","id":42,"result":{...}}</code></pre>
     </div>
 </section>
 
+<section class="slide" id="slide-06b">
+    <div class="slide-number">06b</div>
+    <h2>Streamable HTTP in 2026-07-28 &mdash; Stateless POSTs and <code>subscriptions/listen</code> <span class="era-tag now">2026-07-28</span></h2>
+    <p>The transport keeps its name and its single endpoint, but loses everything that tied a client to one server instance. Every JSON-RPC message is its own <code>POST</code>; each request gets either one JSON body or an SSE stream <em>scoped to that request</em>. Any replica behind a plain load balancer can answer any request.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Mechanism</th><th>Before 2026-07-28</th><th>2026-07-28</th></tr></thead>
+            <tbody>
+                <tr><td>Session</td><td><code>Mcp-Session-Id</code> from <code>initialize</code>, ended by <code>DELETE</code></td><td>None. Explicit handles in tool arguments; header ignored, <code>DELETE</code> &rarr; <code>405</code></td></tr>
+                <tr><td>Unsolicited server&rarr;client channel</td><td><code>GET /mcp</code> SSE stream</td><td><code>POST subscriptions/listen</code>: one long-lived response stream of opted-in change notifications; <code>GET</code> &rarr; <code>405</code></td></tr>
+                <tr><td>Server&rarr;client requests (sampling, elicitation, roots)</td><td>JSON-RPC requests on an SSE stream</td><td>Embedded in a result with <code>resultType: "input_required"</code>; the client retries (deck 03)</td></tr>
+                <tr><td>Dropped stream</td><td>Reconnect with <code>Last-Event-ID</code>, server replays</td><td>Request is lost; re-issue with a new ID. Closing the stream cancels the request</td></tr>
+                <tr><td>Liveness</td><td><code>ping</code></td><td>Removed</td></tr>
+                <tr><td>Routing headers</td><td><code>MCP-Protocol-Version</code></td><td><code>MCP-Protocol-Version</code> + <code>Mcp-Method</code> + <code>Mcp-Name</code>, which must match the body (else <code>400</code>, <code>-32020 HeaderMismatch</code>)</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="code-block">
+        <div class="code-header">subscriptions/listen &mdash; the replacement for GET /mcp and resources/subscribe</div>
+<pre><code>POST /mcp HTTP/1.1
+Accept: application/json, text/event-stream
+Content-Type: application/json
+MCP-Protocol-Version: 2026-07-28
+Mcp-Method: subscriptions/listen
+
+{"jsonrpc":"2.0","id":1,"method":"subscriptions/listen","params":{
+  "_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28",
+           "io.modelcontextprotocol/clientCapabilities":{}},
+  "notifications":{"toolsListChanged":true,
+                   "resourceSubscriptions":["file:///project/config.json"]}}}
+
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+
+data: {"jsonrpc":"2.0","method":"notifications/subscriptions/acknowledged",
+       "params":{"_meta":{"io.modelcontextprotocol/subscriptionId":1},
+                 "notifications":{"toolsListChanged":true,
+                   "resourceSubscriptions":["file:///project/config.json"]}}}
+
+data: {"jsonrpc":"2.0","method":"notifications/resources/updated",
+       "params":{"_meta":{"io.modelcontextprotocol/subscriptionId":1},
+                 "uri":"file:///project/config.json"}}</code></pre>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Why the spec went stateless</div>
+        <p>Sessions forced sticky routing or shared session stores, and server-initiated requests on SSE streams needed the same instance to receive the answer. With version and capabilities in every request's <code>_meta</code>, answers to server questions carried back on a retry, and change notifications on an explicit, request-scoped stream, a remote MCP server scales like any stateless HTTP API. The cost: a dropped stream now means re-sending the request, so long or non-idempotent tools need their own handles (or the tasks extension). <a href="https://agent-protocols-explained.vercel.app/learn/04-transports">Chapter 4 of Agent Protocols Explained</a> animates resume-versus-resend.</p>
+    </div>
+    <p class="spec-cite">Source: MCP specification 2026-07-28 &mdash; <a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http">Streamable HTTP</a>; <a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/subscriptions">Subscriptions</a>; <a href="https://modelcontextprotocol.io/specification/2026-07-28/changelog">Key changes</a> (accessed 2026-10-08).</p>
+</section>
+
 <section class="slide" id="slide-07">
     <div class="slide-number">07</div>
     <h2>Auth, Origin, and the DNS-Rebinding Trap</h2>
@@ -739,7 +812,7 @@ data: {"jsonrpc":"2.0","id":42,"result":{...}}</code></pre>
             <thead><tr><th>Header</th><th>Required</th><th>Purpose</th></tr></thead>
             <tbody>
                 <tr><td><code>Authorization: Bearer &lt;token&gt;</code></td><td>Remote servers</td><td>OAuth 2.1 access token. Validated per-request against the issuer's metadata. Audience MUST match this server's URL (RFC 8707).</td></tr>
-                <tr><td><code>MCP-Protocol-Version</code></td><td>All HTTP requests after <code>initialize</code></td><td>Echoes the negotiated protocol version. A mismatch SHOULD be rejected with <code>400</code>.</td></tr>
+                <tr><td><code>MCP-Protocol-Version</code></td><td>All HTTP requests after <code>initialize</code> (before 2026-07-28); every POST (2026-07-28)</td><td>Before 2026-07-28: echoes the negotiated protocol version; a mismatch SHOULD be rejected with <code>400</code>. 2026-07-28: MUST match the version in the body's <code>_meta</code> (else <code>400</code> + <code>-32020</code>); an unsupported version gets <code>400</code> + <code>-32022</code> listing the supported ones.</td></tr>
                 <tr><td><code>Origin</code></td><td>Localhost servers binding HTTP</td><td>Validates that the request came from a permitted origin &mdash; not a malicious page that lured a browser into resolving <code>evil.com</code> to <code>127.0.0.1</code>.</td></tr>
             </tbody>
         </table>
@@ -765,14 +838,15 @@ app.use((req, res, next) =&gt; {
 
     <div class="callout">
         <div class="callout-label">Why the spec calls this out</div>
-        <p>The Origin header is one of the few HTTP headers that the browser <em>refuses to let JavaScript override</em>. That's why it's the right gate: it pins down the actual page that initiated the request, even after a DNS rebind. Deck 04 (Security) goes deeper on the wider OAuth threat model.</p>
+        <p>The Origin header is one of the few HTTP headers that the browser <em>refuses to let JavaScript override</em>. That's why it's the right gate: it pins down the actual page that initiated the request, even after a DNS rebind. Deck 04 (Security) goes deeper on the wider OAuth threat model. The Origin rule is unchanged in 2026-07-28: an invalid <code>Origin</code> MUST get <code>403</code>.</p>
     </div>
+    <p class="spec-cite">Source: MCP specification 2026-07-28 &mdash; <a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http#protocol-version-header">Streamable HTTP: security and protocol version header</a> (accessed 2026-10-08).</p>
 </section>
 
 <section class="slide" id="slide-08">
     <div class="slide-number">08</div>
-    <h2>Wire Capture &mdash; A Real Session, Byte by Byte</h2>
-    <p>Annotated TCP-level trace of a Streamable HTTP session: handshake, a tool list, a streamed tool call, a server-initiated notification, and a clean shutdown.</p>
+    <h2>Wire Capture &mdash; A Real Session, Byte by Byte <span class="era-tag">before 2026-07-28</span></h2>
+    <p>Protocol version 2025-06-18. Annotated TCP-level trace of a Streamable HTTP session: handshake, a tool list, a streamed tool call, a server-initiated notification, and a clean shutdown.</p>
 
     <div class="code-block">
         <div class="code-header">[1] Initialize &mdash; client opens with a normal POST</div>
@@ -867,6 +941,56 @@ HTTP/1.1 204 No Content</code></pre>
     </div>
 </section>
 
+<section class="slide" id="slide-08b">
+    <div class="slide-number">08b</div>
+    <h2>Wire Capture in 2026-07-28 &mdash; No Session at All <span class="era-tag now">2026-07-28</span></h2>
+    <p>The same client and server under 2026-07-28. Steps [1], [2] and [5] of the previous slide have no equivalent; [4] becomes a <code>subscriptions/listen</code> POST (slide 06b). What is left is one self-contained POST per call, plus what a legacy client sees if it tries the old shape.</p>
+
+    <div class="code-block">
+        <div class="code-header">[1] tools/call &mdash; the first message on the wire</div>
+<pre><code>POST /mcp HTTP/1.1
+Host: search.example.com
+Authorization: Bearer eyJhbGciOi...
+Accept: application/json, text/event-stream
+Content-Type: application/json
+MCP-Protocol-Version: 2026-07-28
+Mcp-Method: tools/call
+Mcp-Name: search
+
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{
+  "name":"search","arguments":{"q":"mcp"},
+  "_meta":{"progressToken":"p1",
+           "io.modelcontextprotocol/protocolVersion":"2026-07-28",
+           "io.modelcontextprotocol/clientInfo":{"name":"example-host","version":"1.0.0"},
+           "io.modelcontextprotocol/clientCapabilities":{}}}}
+
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+
+data: {"jsonrpc":"2.0","method":"notifications/progress",
+       "params":{"progressToken":"p1","progress":0.5}}
+
+data: {"jsonrpc":"2.0","id":1,"result":{"resultType":"complete",
+       "content":[{"type":"text","text":"42 sources..."}],"isError":false}}</code></pre>
+    </div>
+
+    <div class="code-block">
+        <div class="code-header">[2] A legacy client tries the old shape against a 2026-07-28-only server</div>
+<pre><code>GET /mcp HTTP/1.1                     <span class="cm">&rarr; 405 Method Not Allowed</span>
+DELETE /mcp HTTP/1.1                  <span class="cm">&rarr; 405 Method Not Allowed</span>
+POST /mcp  (initialize, no Mcp-Method header)
+                                      <span class="cm">&rarr; 400 Bad Request (required headers missing;
+                                        SHOULD name the supported versions)</span>
+<span class="cm">Mcp-Session-Id / Last-Event-ID headers &rarr; ignored</span></code></pre>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Reading the capture</div>
+        <p>No SSE <code>id:</code> lines (nothing to resume), no session header, and progress still flows on the request's own stream. Hosts, tokens and tool names are illustrative. Dual-era servers (for example the official Python SDK 2.x) instead fall back to the slide-08 behaviour for a legacy client.</p>
+    </div>
+    <p class="spec-cite">Source: MCP specification 2026-07-28 &mdash; <a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http#backward-compatibility">Streamable HTTP: backward compatibility</a>; <a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning#compatibility-matrix">Versioning: compatibility matrix</a>; <a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/progress">Progress</a> (accessed 2026-10-08).</p>
+</section>
+
 <section class="slide" id="slide-09">
     <div class="slide-number">09</div>
     <h2>Choosing a Transport in 2026</h2>
@@ -888,7 +1012,7 @@ HTTP/1.1 204 No Content</code></pre>
                 <li>One server instance backs many users</li>
                 <li>You need OAuth (you almost always do)</li>
                 <li>Long-running tools need to push progress</li>
-                <li>You want resumable sessions across reconnects</li>
+                <li>You want resumable sessions across reconnects <span class="era-tag">before 2026-07-28</span></li>
             </ul>
         </div>
     </div>
@@ -906,8 +1030,9 @@ HTTP/1.1 204 No Content</code></pre>
         <div class="callout-label">Take-aways</div>
         <p><strong>stdio is JSON-on-newlines.</strong> Don't print to stdout. Don't batch. Don't embed newlines.</p>
         <p><strong>Streamable HTTP is one URL, two response shapes.</strong> The server picks per request between a flat JSON response and an SSE stream.</p>
-        <p><strong>Sessions are an opt-in header</strong> and the right place to anchor protocol version, capabilities, OAuth principal and per-stream replay buffers.</p>
-        <p><strong>Resumability is free</strong> if you tag SSE events with monotonic IDs and keep a bounded replay buffer.</p>
+        <p><strong>Sessions are an opt-in header</strong> and the right place to anchor protocol version, capabilities, OAuth principal and per-stream replay buffers. <span class="era-tag">before 2026-07-28</span></p>
+        <p><strong>Resumability is free</strong> if you tag SSE events with monotonic IDs and keep a bounded replay buffer. <span class="era-tag">before 2026-07-28</span></p>
+        <p><strong>2026-07-28 is stateless.</strong> <span class="era-tag now">2026-07-28</span> No sessions, no <code>GET</code> stream, no resumption, no <code>ping</code>: one POST per message, <code>_meta</code> in every request, <code>Mcp-Method</code>/<code>Mcp-Name</code> headers, <code>subscriptions/listen</code> for change notifications, and re-issue on a broken stream.</p>
         <p><strong>Origin and audience</strong> are the two checks that stop the easy attacks &mdash; covered in detail in deck 04.</p>
     </div>
 </section>
